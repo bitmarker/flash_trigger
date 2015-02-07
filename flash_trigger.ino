@@ -2,10 +2,14 @@
 #include "math.h"
 
 #define RELAIS_PIN  40
+#define IR_SENSOR_PIN  44
 #define EARTH_G 9.80665
 
 String inputString = "";         // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
+
+bool ir_sensor_last_state = 0;
+
 
 
 void _printf(const char * format, ...)
@@ -26,17 +30,14 @@ void _printf(const char * format, ...)
 void setup() {
 
   pinMode(RELAIS_PIN, OUTPUT);
-
-
-  pinMode(41, INPUT);
-
+  pinMode(IR_SENSOR_PIN, INPUT);
 
   Serial.begin(9600);
   inputString.reserve(200);
 
   FlashTimers_Init();
   FlashTimers_SetCallback(trigger_flash);
-  FlashTimers_SetDeadTime(200);
+  FlashTimers_SetDeadTime(500);
   
   pinMode(13, OUTPUT);
   
@@ -60,14 +61,16 @@ ISR(TIMER1_COMPA_vect)
 void trigger_flash()
 {
     digitalWrite(RELAIS_PIN, 1);
-    delay(1);
+    delay(100);
     digitalWrite(RELAIS_PIN, 0);
 }
 
 void loop() {
-  bool state = digitalRead(41);
+  bool state = digitalRead(IR_SENSOR_PIN);
+  
+  _printf("%d\n", state);
 
-  if (state)
+  if (state == 0 && ir_sensor_last_state == 1)
   {
     int height = 100; // cm
     
@@ -83,7 +86,8 @@ void loop() {
     inputString = "";
     stringComplete = false;
   }
-  
+   
+  ir_sensor_last_state = state;
   delay(1);
 }
 
