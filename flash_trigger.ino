@@ -20,13 +20,7 @@ void _printf(const char * format, ...)
 
 
 
-void trigger_flash()
-{
-    digitalWrite(RELAIS_PIN, 1);
-    delay(1);
-    digitalWrite(RELAIS_PIN, 0);
-    _printf("x");
-}
+
 
 
 void setup() {
@@ -43,6 +37,31 @@ void setup() {
   FlashTimers_Init();
   FlashTimers_SetCallback(trigger_flash);
   FlashTimers_SetDeadTime(200);
+  
+  pinMode(13, OUTPUT);
+  
+  // initialize timer1 
+  noInterrupts();           // disable all interrupts
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1  = 0;
+  OCR1A = 16000/64;              // compare match register 16MHz/64/1000Hz
+  TCCR1B |= (1 << WGM12);   // CTC mode
+  TCCR1B |= (1 << CS11) | (1 << CS10);    // 64 prescaler
+  TIMSK1 |= (1 << OCIE1A);  // enable timer compare interrupt
+  interrupts();             // enable all interrupts
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+  FlashTimers_Idle();
+}
+
+void trigger_flash()
+{
+    digitalWrite(RELAIS_PIN, 1);
+    delay(1);
+    digitalWrite(RELAIS_PIN, 0);
 }
 
 void loop() {
@@ -57,9 +76,6 @@ void loop() {
     FlashTimers_AddTimer(fall_time);
   }
   
-  FlashTimers_Idle();
-  
-  
   // print the string when a newline arrives:
   if (stringComplete) {
     Serial.println(inputString); 
@@ -68,7 +84,6 @@ void loop() {
     stringComplete = false;
   }
   
-
   delay(1);
 }
 
